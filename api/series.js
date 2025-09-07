@@ -2,7 +2,7 @@ import axios from 'axios';
 import https from 'https';
 import * as cheerio from 'cheerio';
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY || '1e2d76e7c45818ed61645cb647981e5c'; // Move to .env in production
+const TMDB_API_KEY = '1e2d76e7c45818ed61645cb647981e5c'; // Move to env var in production
 
 // Normalize title
 function cleanTitle(title) {
@@ -69,13 +69,14 @@ async function getRealDownloadLink(postUrl) {
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     });
 
-    return response.headers.location || null;
+    const finalUrl = response.headers.location;
+    return finalUrl || null;
   } catch (error) {
     return null;
   }
 }
 
-// API handler
+// Main API handler
 export default async (req, res) => {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -93,6 +94,7 @@ export default async (req, res) => {
       `https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`,
       { timeout: 10000 }
     );
+
     const tmdbTitle = tmdbRes.data?.name || '';
     const normalizedTmdbTitle = cleanTitle(tmdbTitle);
     const paddedSeason = parseInt(season).toString().padStart(2, '0');

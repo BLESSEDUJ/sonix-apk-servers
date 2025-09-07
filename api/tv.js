@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-const isFriendEnabled = true; // Toggle this to enable/disable 02movie requests
-
 function extractSubjectId(html, movieTitle) {
   const regex = new RegExp(`"(\\d{16,})",\\s*"[^"]*",\\s*"${movieTitle.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}"`, 'i');
   const match = html.match(regex);
@@ -30,34 +28,21 @@ function extractDetailPathFromHtml(html, subjectId, movieTitle) {
 }
 
 export default async (req, res) => {
-  const { tmdbId, season, episode, header } = req.query;
+  const { tmdbId, season, episode } = req.query;
   const TMDB_API_KEY = process.env.TMDB_API_KEY || '1e2d76e7c45818ed61645cb647981e5c';
-  const heading = header === '02movie' ? '02MOVIE' : 'SONiX MOVIES LTD';
-
-  // ❌ Restrict 02movie access if not enabled
-  if (header === '02movie' && !isFriendEnabled) {
-    return res.status(403).json({
-      success: false,
-      heading,
-      message: 'Access denied: 02movie is currently disabled',
-    });
-  }
+  const heading = 'SONiX MOVIES LTD';
 
   if (!tmdbId || !season || !episode) {
-    console.log('❌ Missing tmdbId, season, or episode');
     return res.status(400).json({ success: false, heading, error: 'Missing tmdbId, season, or episode' });
   }
 
   try {
-    console.log('🔎 Fetching TMDb TV info for:', tmdbId);
     const tmdbResp = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
     const title = tmdbResp.data.name;
     const year = tmdbResp.data.first_air_date?.split('-')[0];
-    console.log('📺 Title:', title, '| Year:', year);
 
     const searchKeyword = `${title} ${year}`;
     const searchUrl = `https://moviebox.ph/web/searchResult?keyword=${encodeURIComponent(searchKeyword)}`;
-    console.log('🌐 Search URL:', searchUrl);
 
     const searchResp = await axios.get(searchUrl, {
       headers: {
@@ -65,20 +50,16 @@ export default async (req, res) => {
       }
     });
     const html = searchResp.data;
-    console.log('📄 HTML fetched, length:', html.length);
 
     const subjectId = extractSubjectId(html, title);
-    console.log('🆔 subjectId:', subjectId);
     if (!subjectId) {
       return res.status(404).json({ success: false, heading, error: '❌ subjectId not found in HTML' });
     }
 
     const detailPath = extractDetailPathFromHtml(html, subjectId, title);
     const detailsUrl = detailPath ? `https://moviebox.ph/movies/${detailPath}?id=${subjectId}` : null;
-    console.log('🔗 detailsUrl:', detailsUrl);
 
     const downloadUrl = `https://moviebox.ph/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}&se=${season}&ep=${episode}`;
-    console.log('⬇️ Download URL:', downloadUrl);
 
     const downloadResp = await axios.get(downloadUrl, {
       headers: {
@@ -88,8 +69,6 @@ export default async (req, res) => {
         'referer': detailsUrl
       }
     });
-
-    console.log('✅ Download data fetched.');
 
     return res.json({
       success: true,
@@ -101,7 +80,6 @@ export default async (req, res) => {
     });
 
   } catch (err) {
-    console.error('❌ Server error:', err.message);
     res.status(500).json({ success: false, heading, error: err.message });
   }
 };
