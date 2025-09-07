@@ -1,0 +1,20 @@
+{
+  "name": "sonix-search-api",
+  "version": "1.0.0",
+  "description": "Sonix Movies V2 API for search and streaming",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel start"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cheerio": "^1.0.0-rc.12",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Emmanuel",
+  "license": "MIT"
+}
