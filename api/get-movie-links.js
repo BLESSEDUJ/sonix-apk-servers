@@ -1,7 +1,6 @@
 import fetch from 'node-fetch';
 
 const TMDB_API_KEY = '1e2d76e7c45818ed61645cb647981e5c';
-const isFriendEnabled = true;
 
 function cleanTitle(title) {
   return title
@@ -12,15 +11,11 @@ function cleanTitle(title) {
 }
 
 export default async function handler(req, res) {
-  const { tmdbId, header } = req.query;
-  const heading = header === '02movie' ? '02MOVIE' : 'SONiX MOVIES LTD';
+  const { tmdbId } = req.query;
+  const heading = 'SONiX MOVIES LTD';
 
   if (!tmdbId) {
     return res.status(400).json({ success: false, heading, message: '"tmdbId" parameter is required' });
-  }
-
-  if (header === '02movie' && !isFriendEnabled) {
-    return res.status(403).json({ success: false, heading, message: 'Access denied: 02movie is currently disabled' });
   }
 
   // TV Show

@@ -4,9 +4,6 @@ import * as cheerio from 'cheerio';
 
 const TMDB_API_KEY = '1e2d76e7c45818ed61645cb647981e5c';
 
-// Friend control toggle
-const isFriendEnabled = false; // Set to false to block 02movie
-
 // Normalize title
 function cleanTitle(title) {
   return title.replace(/[\u2018\u2019]/g, "'").replace(/[^a-zA-Z0-9]/g, '').toLowerCase().trim();
@@ -23,11 +20,9 @@ function getSeasonPatterns(season) {
 async function getRealDownloadLink(postUrl) {
   // If the link is NOT from downloadwella.com, return as is
   if (!/^https?:\/\/(www\.)?downloadwella\.com/i.test(postUrl)) {
-    console.log('Non-downloadwella link, returning as is.');
     return postUrl;
   }
   try {
-    console.log('Resolving real download link:', postUrl);
     const pageRes = await axios.get(postUrl, {
       timeout: 10000,
       headers: {
@@ -68,19 +63,12 @@ async function getRealDownloadLink(postUrl) {
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     });
 
-    // Log response status and headers
-    console.log('POST response status:', response.status);
-    console.log('POST response headers:', response.headers);
-
     const finalUrl = response.headers.location;
     if (!finalUrl) {
-      console.error('No redirect location found in POST response.');
       return null;
     }
-    console.log('Resolved download link:', finalUrl);
     return finalUrl;
   } catch (error) {
-    console.error('Error resolving download link:', error.message, error.response?.data);
     return null;
   }
 }
@@ -93,17 +81,6 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // Friend control logic
-  const { header } = req.query;
-  const heading = header === '02movie' ? '02MOVIE' : 'SONiX MOVIES LTD';
-  if (header === '02movie' && !isFriendEnabled) {
-    return res.status(403).json({
-      success: false,
-      heading,
-      message: 'Access denied: 02movie is currently disabled'
-    });
-  }
-
   try {
     const { id, season, episode } = req.query;
 
@@ -111,7 +88,6 @@ export default async (req, res) => {
       return res.status(400).json({ error: 'Missing TMDb id, season, or episode' });
     }
 
-    console.log('Fetching TMDB title...');
     const tmdbRes = await axios.get(`https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`, { timeout: 10000 });
     const tmdbTitle = tmdbRes.data?.name || '';
     const normalizedTmdbTitle = cleanTitle(tmdbTitle);
@@ -119,7 +95,6 @@ export default async (req, res) => {
     const paddedSeason = parseInt(season).toString().padStart(2, '0');
     const searchTitle = `${tmdbTitle} S${paddedSeason}`;
 
-    console.log('Searching ClipSave...');
     const searchUrl = `https://clipsave-movies-api.onrender.com/v1/series/search?query=${encodeURIComponent(searchTitle)}`;
     const clipsaveRes = await axios.get(searchUrl, { timeout: 10000 });
     const results = clipsaveRes.data?.data?.movies || [];
@@ -143,7 +118,6 @@ export default async (req, res) => {
       });
     }
 
-    console.log('Fetching episode details...');
     const detailUrl = `https://clipsave-movies-api.onrender.com/v1/series/details?link=${encodeURIComponent(bestMatch.link)}`;
     const detailRes = await axios.get(detailUrl, { timeout: 10000 });
     const episodes = detailRes.data?.data?.downloadDetails || [];
@@ -162,7 +136,6 @@ export default async (req, res) => {
       });
     }
 
-    console.log('Resolving real download link...');
     const realDownload = await getRealDownloadLink(foundEpisode.link);
 
     if (!realDownload) {
@@ -181,7 +154,6 @@ export default async (req, res) => {
     });
 
   } catch (err) {
-    console.error('API Error:', err.message || err);
     return res.status(500).json({ error: 'Internal server error', details: err.message || err });
   }
 };
