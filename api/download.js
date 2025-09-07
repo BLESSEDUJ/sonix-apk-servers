@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const isFriendEnabled = true;
 
@@ -29,7 +29,7 @@ function extractDetailPathFromHtml(html, subjectId, movieTitle) {
   return lastMatch;
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const { tmdbId, header } = req.query;
   const TMDB_API_KEY = process.env.TMDB_API_KEY || '1e2d76e7c45818ed61645cb647981e5c';
 
